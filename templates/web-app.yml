@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: $($vars.appName)
+  namespace: $($vars.namespace)
+spec:
+  selector:
+    app: $($vars.appName)
+  ports:
+  - port: 80
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: $($vars.appName)
+  namespace: $($vars.namespace)
+  labels:
+    app: $($vars.appName)
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: $($vars.appName)
+  template:
+    metadata:
+      labels:
+        app: $($vars.appName)
+    spec:
+      containers:
+      - name: $($vars.appName)
+        image: $($config.ContainerRegistry)/$($vars.appName):0.0
+        env:
+        - name: SOME_VAR
+          value: "some value"
+        ports:
+        - containerPort: 80
