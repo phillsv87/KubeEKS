@@ -1,0 +1,17 @@
+apiVersion: cert-manager.io/v1alpha2
+kind: ClusterIssuer
+metadata:
+  name: $($vars.type)
+  namespace: $($vars.namespace)
+spec:
+  acme:
+    server: $($vars.server)
+    email: $($config.AdminEmail)
+    privateKeySecretRef:
+      name: $($vars.type)
+    solvers:
+    # An empty 'selector' means that this solver matches all domains
+    - selector: {}
+      http01:
+        ingress:
+          class: nginx

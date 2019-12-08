@@ -69,17 +69,23 @@ kubectl -f cluster.yml
 ```
 
 
-### Cluster Ingress Setup 
-Next we will be setting up an ingres controller using ingress-nginx
+### Cluster Ingress Setup with Let's Encrypt
+Next we will be setting up an ingress controller using ingress-nginx and automatic SSL certificate management using Let's Encrypt.
 
 ``` sh
 # Install ingress components
 ./CreateIngress.ps1
+
+# Create the cert manager
+./CreateCertManager.ps1
+
+# Create an issuer
+./CreateIssuer.ps1
+
 ```
+After successfuly running the above commands we will need to add a DNS CName record to point to ingress load balancer address
 
-- Add DNS CName record to point to ingress load balancer address
-
-### Namespace Setup
+## Namespace Setup
 Namespace setup will be done for each application set that will be deployed to your cluster
 
 ``` sh
@@ -107,6 +113,62 @@ Application deployment is handled using the Deploy.ps1 script.
 ```
 
 Deploy.ps1 will build an image using the provided Dockerfile and push the image to the projects configured ECR.
+
+## Certificate Creation
+Creating SSL certificates is handled using the MakeCert.ps1 script
+
+``` sh
+# Create a certificate yml file
+./MakeCert.ps1 -domain api.example.com -namespace exns
+
+# Apply the certificate to the cluster
+kubectl apply -f ../cert-exns-api-example-com.yml
+```
+
+Once the certificate has been applied to the cluster it can be used in an ingress controller.
+
+``` yml
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: ingress-exns
+  namespace: exns
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  tls:
+  
+  - hosts:
+    - frontend.example.com
+    secretName: cert-frontend-example-com
+
+# Insert tls host
+  - hosts:
+    - api.example.com
+    secretName: cert-api-example-com
+# End Insert
+
+  rules:
+
+  - host: frontend.example.com
+    http:
+      paths:
+      - backend:
+          serviceName: frontend
+          servicePort: 80
+        path: /
+
+# Insert host
+  - host: api.example.com
+    http:
+      paths:
+      - backend:
+          serviceName: api
+          servicePort: 80
+        path: /
+# End Insert
+
+```
 
 ## Helpful Links
 Using a Network Load Balancer with the NGINX Ingress Controller on Amazon EKS - 
