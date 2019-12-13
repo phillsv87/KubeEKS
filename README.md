@@ -33,20 +33,24 @@ All configurations should be stored in a file called KubeEKS.json in a parent di
 KubeEKS directory.
 ``` json
 {
+    "AdminEmail":"<Cluster admin email address>",
     "AwsProfile":"<AWS profile>",
+    "IamInstanceProfileId":"<InstanceProfileId of iam profile>","IamInstanceProfileName":"<InstanceProfileName of iam profile>",
     "ClusterRegion":"<Cluster Region>",
-    "ClusterName":"<Cluster Name>"
+    "ClusterName":"<Cluster Name>",
+    "ContainerRegistry":"<URL to container register>"
 }
 ```
+### Configuration Properties
+- IamInstanceProfileId - Run "aws iam list-instance-profiles" to list profiles
 
 ## AWS cli
 All aws cli interactions are done using the named profile set in the AwsProfile config value
 
 see - https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html
 
-## Cluster Setup
 
-### Create Cluster 
+## Create Cluster 
 First we will create our cluster. Below is a example cluster with 2 nodes of size t3.small
 
 ``` yaml
@@ -68,8 +72,24 @@ nodeGroups:
 kubectl -f cluster.yml
 ```
 
+## Persistent Storage Setup
+Persistent storage is backed by 1 of 3 different AWS storage types EBS, EFS and S3. In most cases
+EBS will be used and is the type of storage used by cluster nodes for their OS. EBS presents a 
+challenge when mounting to our Deployments, EBS volumes can only be access from a single 
+Availability Zone and Deployments can be created in any Availability Zone within their Region.
+To overcome this limitation we will setup the EBS CSI driver. The InstallCSIDriver.ps1 script 
+will create the nessasary iam profiles and install the aws-ebs-csi-driver driver into the
+kube-system namespace. It is safe to run InstallCSIDriver.ps1 multiple times, all resources are
+check for before being created.
 
-### Cluster Ingress Setup with Let's Encrypt
+``` sh
+./InstallCSIDriver.ps1
+```
+
+see for more info - https://aws.amazon.com/blogs/opensource/eks-support-ebs-csi-driver/
+
+
+## Cluster Ingress Setup with Let's Encrypt
 Next we will be setting up an ingress controller using ingress-nginx and automatic SSL certificate management using Let's Encrypt.
 
 ``` sh
@@ -167,6 +187,73 @@ spec:
           servicePort: 80
         path: /
 # End Insert
+
+```
+
+## Creating Storage Volume
+Before creating a storage volume before you have followed the "Persistent Storage Setup" section.
+There are 2 steps for creating a Storage volume, Create a storage class and creating the volume its self.
+
+1. Create Storage Class (this only needs to be done once per namespace)
+``` sh
+./MakeStorageClass.ps1 -namespace "<namespace>" -name "<name>" -type "<gp2(default), io1, st1 or sc1>"
+kubectl apply -f "../storage-class-<namespace>-<name>.yml"
+```
+
+2. Create Volume Claim
+``` sh
+./MakeVolume.ps1
+kubectl apply -f ../volume-<namespace>-<name>.yml
+```
+
+3. Mount Volume
+``` yaml
+# Example of volume used with MySQL Deployment
+apiVersion: v1
+kind: Service
+metadata:
+  name: sql
+  namespace: exns
+spec:
+  selector:
+    app: sql
+  ports:
+  - port: 3306
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sql
+  namespace: exns
+  labels:
+    app: sql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sql
+  template:
+    metadata:
+      labels:
+        app: sql
+    spec:
+      containers:
+      - name: sql
+        image: mysql:8.0.13
+
+# Add volumeMounts
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: data-volume
+
+# Add volume
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: volume-<name used with MakeVolume.ps1>
+
 
 ```
 
