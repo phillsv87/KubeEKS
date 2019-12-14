@@ -1,12 +1,12 @@
 #!/usr/local/bin/pwsh
 param(
     [string]$namespace=$(throw "-namespace required"),
-    [string]$appName=$(throw "-appName required"),
+    [string]$name=$(throw "-name required"),
     [string]$imageName=$(throw "-imageName required")
 )
 
 & $PSScriptRoot/TextTemplate.ps1 -tmpl web-app `
     -namespace $namespace `
-    -appName $appName `
+    -name $name `
     -imageName $imageName `
-    -out "$PSScriptRoot/../app-$namespace-$appName.yml"
+    -out "$PSScriptRoot/../app-$namespace-$name.yml"
