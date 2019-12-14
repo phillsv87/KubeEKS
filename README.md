@@ -114,6 +114,9 @@ kubectl create namespace exns
 
 # Make ingress yml. ../ingress-exns.yml will be created
 ./MakeIngress.ps1 -namespace exns
+
+# Make any needed changes to ../ingress-exns.yml then apply
+kubectl apply -f ../ingress-exns.yml
 ```
 
 After running ./MakeIngress.ps1 script the ../ingress-exns.yml will be created. Modify the newly
@@ -126,13 +129,40 @@ kubectl apply -f ../ingress-exns.yml
 
 
 ## App Deployment
-Application deployment is handled using the Deploy.ps1 script.
 
+1. Create an ECR repo for the app. Each time the app is build a new image will be created app pushed
+to the repo. This step is only done once per app. (note. Use an app name that is unique across all namespaces)
 ``` sh
-./Deploy.ps1 -name "<app name>" -dockerFile "<path/to/docker/file>"  -version "<image version>" -noSignIn
+./CreateContainerRepo.ps1 -name "<full app name>"
 ```
 
-Deploy.ps1 will build an image using the provided Dockerfile and push the image to the projects configured ECR.
+2. Build and deploy the image for the app. BuildImage.ps1 will build an image using the provided
+Dockerfile and push the image to the projects configured ECR.
+``` sh
+./BuildImage.ps1 -name "<full app name>" -dockerFile "<path/to/docker/file>"  -version "<image version>"
+```
+
+3. Create App YAML - todo
+``` sh
+# Create app yml
+./MakeWebApp.ps1 -namespace "<namespace>" -appName "<app name>" -imageName "<full app name>"
+
+# apply
+kubectl apply -f "../app-<namespace>-<app name>.yml"
+```
+
+3. Make Cert
+``` sh
+# Create cert yml
+./MakeCert.ps1 -domain "<domain name>" -namespace "<namespace>"
+
+# apply
+kubectl apply -f "../cert-<namespace>-<domain name>.yml"
+```
+
+4. Add to Ingress - see "Inserting App Into Ingress" and apply
+
+
 
 ## Certificate Creation
 Creating SSL certificates is handled using the MakeCert.ps1 script
@@ -147,6 +177,7 @@ kubectl apply -f ../cert-exns-api-example-com.yml
 
 Once the certificate has been applied to the cluster it can be used in an ingress controller.
 
+### Inserting App Into Ingress
 ``` yml
 apiVersion: extensions/v1beta1
 kind: Ingress
