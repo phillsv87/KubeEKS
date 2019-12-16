@@ -7,6 +7,10 @@ param(
 $dir=&"$PSScriptRoot/GetSecretsDirectory.ps1"
 $path="$dir/secrets-$namespace-$name.yml"
 
+if(!(Test-Path $dir)){
+    New-Item -Path "$dir" -ItemType "directory"
+}
+
 if(Test-Path $path){
     Write-Host "Secret file already exists"
     return $path
