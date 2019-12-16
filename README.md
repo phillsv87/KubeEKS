@@ -225,7 +225,7 @@ spec:
 Before creating a storage volume before you have followed the "Persistent Storage Setup" section.
 There are 2 steps for creating a Storage volume, Create a storage class and creating the volume its self.
 
-1. Create Storage Class (this only needs to be done once per namespace)
+1. Create Storage Class (this only needs to be done once per namespace). Actually, I think StoreClass spans multiple namespaces
 ``` sh
 ./MakeStorageClass.ps1 -namespace "<namespace>" -name "<name>" -type "<gp2(default), io1, st1 or sc1>"
 kubectl apply -f "../storage-class-<namespace>-<name>.yml"
@@ -233,7 +233,7 @@ kubectl apply -f "../storage-class-<namespace>-<name>.yml"
 
 2. Create Volume Claim
 ``` sh
-./MakeVolume.ps1
+./MakeVolume.ps1 -namespace "<exns>" -name "<name>" -sizeGb 10 -storageClass "<storage class>"
 kubectl apply -f ../volume-<namespace>-<name>.yml
 ```
 
