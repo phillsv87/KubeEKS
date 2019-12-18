@@ -35,7 +35,8 @@ KubeEKS directory.
 {
     "AdminEmail":"<Cluster admin email address>",
     "AwsProfile":"<AWS profile>",
-    "IamInstanceProfileId":"<InstanceProfileId of iam profile>","IamInstanceProfileName":"<InstanceProfileName of iam profile>",
+    "IamInstanceProfileId":"<InstanceProfileId of iam profile>",
+    "IamInstanceProfileName":"<InstanceProfileName of iam profile>",
     "ClusterRegion":"<Cluster Region>",
     "ClusterName":"<Cluster Name>",
     "ContainerRegistry":"<URL to container register>"
@@ -287,6 +288,123 @@ spec:
 
 
 ```
+
+## Continuous Deployment
+
+### Steps
+- Create AWS profile for use by CircleCI
+
+``` text
+# Add to ~/.aws/config
+[profile ciguy]
+region = <default region. example - us-east-2>
+output = json
+```
+
+``` text
+# Add to ~/.aws/credentials
+[ciguy]
+aws_access_key_id = <key id>
+aws_secret_access_key = <secret access key>
+```
+
+- Configure CircleCI context with AWS vars
+  - https://circleci.com/orbs/registry/orb/circleci/aws-ecr
+
+- Add CircleCI config
+``` yaml
+version: 2.1
+
+# filter based on branch name. This is optional and can be removed
+deploy-status: &deploy-status
+  filters:
+    branches:
+      only:
+        - deploy-status
+
+orbs:
+  aws-ecr: circleci/aws-ecr@6.5.0
+
+workflows:
+  build_and_push_image:
+    jobs:
+      - aws-ecr/build-and-push-image:
+          # The line below adds the filter to the job and can be removed
+          <<: *deploy-status
+          context: TheClaw
+          create-repo: true
+          dockerfile: ./apps/status/Dockerfile
+          path: ./apps/status
+          profile-name: ciguy
+          repo: web-status
+          tag: 'latest'
+```
+
+- Setup Keel. Keel automatically pulls the latest version of images for deployments
+``` sh
+# To override default latest semver tag, add &tag=x.x.x query argument to the URL below
+kubectl apply -f https://sunstone.dev/keel?namespace=keel&username=admin&password=admin&tag=latest
+
+# Check the status of the pods in the keel namespace
+kubectl -n keel get pods
+
+# Add aws iam policy to aws profile needed by Keel
+./AddKeelPolicy.ps1
+
+```
+
+Add configuration to Deployment YAML
+
+``` yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: status
+  namespace: web
+  labels:
+    app: status
+
+# Insert Keel Annotations
+  annotations:
+      keel.sh/policy: force
+      keel.sh/trigger: poll
+      keel.sh/pollSchedule: "@every 1m"
+#end
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: status
+  template:
+    metadata:
+  
+# Insert IAM role so keel can pull images. Use GetRoleArn.ps1 to get arn value
+      annotations:
+        iam.amazonaws.com/role: arn:aws:iam::123456789012:role/me-long-role-name
+# end
+
+      labels:
+        app: status
+    spec:
+      containers:
+      - name: status
+        image: 123456789012.dkr.ecr.us-east-2.amazonaws.com/me-image-name:latest
+
+# Insert pull policy
+        imagePullPolicy: Always
+# end
+
+        env:
+        - name: SOME_VAR
+          value: "some value"
+        ports:
+        - containerPort: 80
+
+
+```
+
 
 ## Helpful Links
 Using a Network Load Balancer with the NGINX Ingress Controller on Amazon EKS - 
