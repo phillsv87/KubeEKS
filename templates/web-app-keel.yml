@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: $($vars.name)
+  namespace: $($vars.namespace)
+spec:
+  selector:
+    app: $($vars.name)
+  ports:
+  - port: 80
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: $($vars.name)
+  namespace: $($vars.namespace)
+  labels:
+    app: $($vars.name)
+  annotations:
+      keel.sh/policy: force
+      keel.sh/trigger: poll
+      keel.sh/pollSchedule: "@every 1m"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: $($vars.name)
+  template:
+    metadata:
+      annotations:
+        iam.amazonaws.com/role: $($vars.role)
+      labels:
+        app: $($vars.name)
+    spec:
+      containers:
+      - name: $($vars.name)
+        image: $($config.ContainerRegistry)/$($vars.imageName):latest
+        imagePullPolicy: Always
+        env:
+        - name: SOME_VAR
+          value: "some value"
+        ports:
+        - containerPort: 80

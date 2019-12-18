@@ -353,7 +353,15 @@ kubectl -n keel get pods
 
 ```
 
-Add configuration to Deployment YAML
+Add configuration to deployment YAML by either generating a new YAML file for the deployment or modify an existing deployment
+
+### Generate new web app using the -keel flag
+
+``` sh
+./MakeWebApp.ps1 -namespace exns -name testy -imageName exns-testy -keel
+``` 
+
+### Modify and existing deployment
 
 ``` yaml
 
@@ -361,9 +369,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: status
-  namespace: web
+  namespace: exns
   labels:
-    app: status
+    app: testy
 
 # Insert Keel Annotations
   annotations:
@@ -376,7 +384,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: status
+      app: testy
   template:
     metadata:
   
@@ -386,11 +394,11 @@ spec:
 # end
 
       labels:
-        app: status
+        app: testy
     spec:
       containers:
-      - name: status
-        image: 123456789012.dkr.ecr.us-east-2.amazonaws.com/me-image-name:latest
+      - name: testy
+        image: 123456789012.dkr.ecr.us-east-2.amazonaws.com/exns-testy:latest
 
 # Insert pull policy
         imagePullPolicy: Always
