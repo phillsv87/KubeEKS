@@ -311,7 +311,7 @@ aws_secret_access_key = <secret access key>
 - Configure CircleCI context with AWS vars
   - https://circleci.com/orbs/registry/orb/circleci/aws-ecr
 
-- Add CircleCI config
+- Add CircleCI config to $gitRoot/.circleci/config.yml
 ``` yaml
 version: 2.1
 
