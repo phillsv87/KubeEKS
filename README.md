@@ -414,6 +414,37 @@ spec:
 ```
 
 
+## Dashboard UI
+The Dashboard UI is used to monitor the cluster using a web interface.
+
+### Setup
+
+``` sh
+./InstallDashboardUI.ps1
+```
+
+### Login to dashboard
+Get login token and open proxy to to dashboard. OpenDashboardUI.ps1 will copy a login token to your
+clipboard, start the dashboard proxy and open the dashboard web interface. Use the token in your
+clipboard to login
+``` sh
+./OpenDashboardUI.ps1
+```
+
+GetDashboardLoginToken.ps1 can be used to get a copy of the login token if you session expires
+``` sh
+./GetDashboardLoginToken.ps1
+```
+
+Open Web UI - 
+http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
+
+
+
+## Helpful links
+- https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/#accessing-the-dashboard-ui
+- https://github.com/kubernetes/dashboard/blob/master/docs/user/access-control/creating-sample-user.md
+
 ## Helpful Links
 Using a Network Load Balancer with the NGINX Ingress Controller on Amazon EKS - 
 https://aws.amazon.com/blogs/opensource/network-load-balancer-nginx-ingress-controller-eks/
