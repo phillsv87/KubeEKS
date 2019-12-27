@@ -413,6 +413,29 @@ spec:
 
 ```
 
+# Resource monitoring
+Resource monitoring can be done using CLI commands or the Dashboard UI web interface
+
+## CLI
+Resource monitoring via the CLI is done using kubectl commands. Before using kubectl monitoring
+commands such as top the MetricsServer must be install
+``` sh
+# Install Metrics server. For cluster running k8s version 1.7 or lower add the -version 1.7 argument
+./InstallMetricServer.ps1
+```
+
+Once MetricsServer is installed kubectl monitoring commands can be used.
+``` sh
+# Get node resources
+kubectl top node
+
+# Get pod resources
+kubectl top pods --all-namespaces
+
+# Get node and pod resources
+./Top.ps1
+```
+
 
 ## Dashboard UI
 The Dashboard UI is used to monitor the cluster using a web interface.
