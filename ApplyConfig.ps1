@@ -61,6 +61,7 @@ if($path){
             }
         }
         $name=$prefix+$name.ToUpper()
+        $value=$value.Replace("\","\\").Replace("`n","\n").Replace("`t","\t")
 
         $out+="$indent- name: $name$nl"
         $out+="$indent  value: ""$value""$nl"
