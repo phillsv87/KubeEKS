@@ -1,4 +1,4 @@
-# source - https://github.com/jetstack/cert-manager/releases/download/v0.12.0/cert-manager.yaml
+# source - https://github.com/jetstack/cert-manager/releases/download/v0.13.1/cert-manager.yaml
 
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -178,7 +178,7 @@ spec:
                     - "False"
                     - Unknown
                   type:
-                    description: Type of the condition, currently ('Ready').
+                    description: Type of the condition, currently ('Ready', 'InvalidRequest').
                     type: string
             failureTime:
               description: FailureTime stores the time that this CertificateRequest
@@ -337,6 +337,43 @@ spec:
               description: SecretName is the name of the secret resource to store
                 this secret in
               type: string
+            subject:
+              description: Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
+              type: object
+              properties:
+                countries:
+                  description: Countries to be used on the Certificate.
+                  type: array
+                  items:
+                    type: string
+                localities:
+                  description: Cities to be used on the Certificate.
+                  type: array
+                  items:
+                    type: string
+                organizationalUnits:
+                  description: Organizational Units to be used on the Certificate.
+                  type: array
+                  items:
+                    type: string
+                postalCodes:
+                  description: Postal codes to be used on the Certificate.
+                  type: array
+                  items:
+                    type: string
+                provinces:
+                  description: State/Provinces to be used on the Certificate.
+                  type: array
+                  items:
+                    type: string
+                serialNumber:
+                  description: Serial number to be used on the Certificate.
+                  type: string
+                streetAddresses:
+                  description: Street addresses to be used on the Certificate.
+                  type: array
+                  items:
+                    type: string
             uriSANs:
               description: URISANs is a list of URI Subject Alternative Names to be
                 set on this Certificate.
@@ -1888,6 +1925,48 @@ spec:
                 email:
                   description: Email is the email for this account
                   type: string
+                externalAccountBinding:
+                  description: ExternalAcccountBinding is a reference to a CA external
+                    account of the ACME server.
+                  type: object
+                  required:
+                  - keyAlgorithm
+                  - keyID
+                  - keySecretRef
+                  properties:
+                    keyAlgorithm:
+                      description: keyAlgorithm is the MAC key algorithm that the
+                        key is used for. Valid values are "HS256", "HS384" and "HS512".
+                      type: string
+                      enum:
+                      - HS256
+                      - HS384
+                      - HS512
+                    keyID:
+                      description: keyID is the ID of the CA key that the External
+                        Account is bound to.
+                      type: string
+                    keySecretRef:
+                      description: keySecretRef is a Secret Key Selector referencing
+                        a data item in a Kubernetes Secret which holds the symmetric
+                        MAC key of the External Account Binding. The `key` is the
+                        index string that is paired with the key data in the Secret
+                        and should not be confused with the key data itself, or indeed
+                        with the External Account Binding keyID above. The secret
+                        key stored in the Secret **must** be un-padded, base64 URL
+                        encoded data.
+                      type: object
+                      required:
+                      - name
+                      properties:
+                        key:
+                          description: The key of the secret to select from. Must
+                            be a valid secret key.
+                          type: string
+                        name:
+                          description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            TODO: Add other useful fields. apiVersion, kind, uid?'
+                          type: string
                 privateKeySecretRef:
                   description: PrivateKey is the name of a secret containing the private
                     key for this user account.
@@ -3412,7 +3491,6 @@ spec:
                   type: object
                   required:
                   - apiTokenSecretRef
-                  - url
                   properties:
                     apiTokenSecretRef:
                       description: APITokenSecretRef is a secret key selector for
@@ -3586,6 +3664,48 @@ spec:
                 email:
                   description: Email is the email for this account
                   type: string
+                externalAccountBinding:
+                  description: ExternalAcccountBinding is a reference to a CA external
+                    account of the ACME server.
+                  type: object
+                  required:
+                  - keyAlgorithm
+                  - keyID
+                  - keySecretRef
+                  properties:
+                    keyAlgorithm:
+                      description: keyAlgorithm is the MAC key algorithm that the
+                        key is used for. Valid values are "HS256", "HS384" and "HS512".
+                      type: string
+                      enum:
+                      - HS256
+                      - HS384
+                      - HS512
+                    keyID:
+                      description: keyID is the ID of the CA key that the External
+                        Account is bound to.
+                      type: string
+                    keySecretRef:
+                      description: keySecretRef is a Secret Key Selector referencing
+                        a data item in a Kubernetes Secret which holds the symmetric
+                        MAC key of the External Account Binding. The `key` is the
+                        index string that is paired with the key data in the Secret
+                        and should not be confused with the key data itself, or indeed
+                        with the External Account Binding keyID above. The secret
+                        key stored in the Secret **must** be un-padded, base64 URL
+                        encoded data.
+                      type: object
+                      required:
+                      - name
+                      properties:
+                        key:
+                          description: The key of the secret to select from. Must
+                            be a valid secret key.
+                          type: string
+                        name:
+                          description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            TODO: Add other useful fields. apiVersion, kind, uid?'
+                          type: string
                 privateKeySecretRef:
                   description: PrivateKey is the name of a secret containing the private
                     key for this user account.
@@ -5110,7 +5230,6 @@ spec:
                   type: object
                   required:
                   - apiTokenSecretRef
-                  - url
                   properties:
                     apiTokenSecretRef:
                       description: APITokenSecretRef is a secret key selector for
@@ -5442,8 +5561,7 @@ metadata:
     app.kubernetes.io/name: cainjector
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
-
+    helm.sh/chart: cert-manager-v0.13.1
 ---
 # Source: cert-manager/templates/serviceaccount.yaml
 apiVersion: v1
@@ -5457,7 +5575,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 
 ---
 # Source: cert-manager/templates/webhook-serviceaccount.yaml
@@ -5471,7 +5589,7 @@ metadata:
     app.kubernetes.io/name: webhook
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 ---
 # Source: cert-manager/templates/cainjector-rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -5483,7 +5601,7 @@ metadata:
     app.kubernetes.io/name: cainjector
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["certificates"]
@@ -5513,7 +5631,7 @@ metadata:
     app.kubernetes.io/name: cainjector
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -5535,7 +5653,7 @@ metadata:
     app.kubernetes.io/name: cainjector
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 rules:
   # Used for leader election by the controller
   # TODO: refine the permission to *just* the leader election configmap
@@ -5557,14 +5675,13 @@ metadata:
     app.kubernetes.io/name: cainjector
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: cert-manager-cainjector:leaderelection
 subjects:
-  - apiGroup: ""
-    kind: ServiceAccount
+  - kind: ServiceAccount
     name: cert-manager-cainjector
     namespace: cert-manager
 ---
@@ -5582,7 +5699,7 @@ metadata:
     app.kubernetes.io/name: webhook
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -5608,7 +5725,7 @@ metadata:
     app.kubernetes.io/name: webhook
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -5630,7 +5747,7 @@ metadata:
     app.kubernetes.io/name: webhook
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 rules:
 - apiGroups:
   - admission.cert-manager.io
@@ -5653,7 +5770,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 rules:
   # Used for leader election by the controller
   # TODO: refine the permission to *just* the leader election configmap
@@ -5675,7 +5792,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -5698,7 +5815,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["issuers", "issuers/status"]
@@ -5725,7 +5842,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["clusterissuers", "clusterissuers/status"]
@@ -5752,7 +5869,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["certificates", "certificates/status", "certificaterequests", "certificaterequests/status"]
@@ -5788,7 +5905,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 rules:
   - apiGroups: ["acme.cert-manager.io"]
     resources: ["orders", "orders/status"]
@@ -5827,7 +5944,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 rules:
   # Use to update challenge resource status
   - apiGroups: ["acme.cert-manager.io"]
@@ -5879,7 +5996,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["certificates", "certificaterequests"]
@@ -5911,7 +6028,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -5932,7 +6049,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -5953,7 +6070,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -5974,7 +6091,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -5995,7 +6112,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -6016,7 +6133,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -6037,7 +6154,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
     rbac.authorization.k8s.io/aggregate-to-view: "true"
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
@@ -6057,7 +6174,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
 rules:
@@ -6078,7 +6195,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 spec:
   type: ClusterIP
   ports:
@@ -6101,7 +6218,7 @@ metadata:
     app.kubernetes.io/name: webhook
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 spec:
   type: ClusterIP
   ports:
@@ -6125,7 +6242,7 @@ metadata:
     app.kubernetes.io/name: cainjector
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 spec:
   replicas: 1
   selector:
@@ -6141,13 +6258,13 @@ spec:
         app.kubernetes.io/name: cainjector
         app.kubernetes.io/instance: cert-manager
         app.kubernetes.io/managed-by: Tiller
-        helm.sh/chart: cert-manager-v0.12.0
+        helm.sh/chart: cert-manager-v0.13.1
       annotations:
     spec:
       serviceAccountName: cert-manager-cainjector
       containers:
         - name: cert-manager
-          image: "quay.io/jetstack/cert-manager-cainjector:v0.12.0"
+          image: "quay.io/jetstack/cert-manager-cainjector:v0.13.1"
           imagePullPolicy: IfNotPresent
           args:
           - --v=2
@@ -6160,7 +6277,6 @@ spec:
           resources:
             {}
             
-
 ---
 # Source: cert-manager/templates/deployment.yaml
 apiVersion: apps/v1
@@ -6173,7 +6289,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 spec:
   replicas: 1
   selector:
@@ -6189,7 +6305,7 @@ spec:
         app.kubernetes.io/name: cert-manager
         app.kubernetes.io/instance: cert-manager
         app.kubernetes.io/managed-by: Tiller
-        helm.sh/chart: cert-manager-v0.12.0
+        helm.sh/chart: cert-manager-v0.13.1
       annotations:
         prometheus.io/path: "/metrics"
         prometheus.io/scrape: 'true'
@@ -6198,7 +6314,7 @@ spec:
       serviceAccountName: cert-manager
       containers:
         - name: cert-manager
-          image: "quay.io/jetstack/cert-manager-controller:v0.12.0"
+          image: "quay.io/jetstack/cert-manager-controller:v0.13.1"
           imagePullPolicy: IfNotPresent
           args:
           - --v=2
@@ -6234,7 +6350,7 @@ metadata:
     app.kubernetes.io/name: webhook
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
 spec:
   replicas: 1
   selector:
@@ -6250,13 +6366,13 @@ spec:
         app.kubernetes.io/name: webhook
         app.kubernetes.io/instance: cert-manager
         app.kubernetes.io/managed-by: Tiller
-        helm.sh/chart: cert-manager-v0.12.0
+        helm.sh/chart: cert-manager-v0.13.1
       annotations:
     spec:
       serviceAccountName: cert-manager-webhook
       containers:
         - name: cert-manager
-          image: "quay.io/jetstack/cert-manager-webhook:v0.12.0"
+          image: "quay.io/jetstack/cert-manager-webhook:v0.13.1"
           imagePullPolicy: IfNotPresent
           args:
           - --v=2
@@ -6299,7 +6415,7 @@ metadata:
     app.kubernetes.io/name: webhook
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
   annotations:
     cert-manager.io/inject-ca-from-secret: "cert-manager/cert-manager-webhook-tls"
 webhooks:
@@ -6332,7 +6448,6 @@ webhooks:
 
 ---
 # Source: cert-manager/templates/cainjector-psp.yaml
-
 
 ---
 # Source: cert-manager/templates/psp-clusterrole.yaml
@@ -6373,7 +6488,7 @@ metadata:
     app.kubernetes.io/name: webhook
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: Tiller
-    helm.sh/chart: cert-manager-v0.12.0
+    helm.sh/chart: cert-manager-v0.13.1
   annotations:
     cert-manager.io/inject-ca-from-secret: "cert-manager/cert-manager-webhook-tls"
 webhooks:
