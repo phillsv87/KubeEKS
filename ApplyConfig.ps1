@@ -5,7 +5,7 @@ param(
     [string]$prefix,
     [string]$insertPath,
     [string]$insertSecretPath,
-    [string]$filter='PROD__',
+    [string]$filter=$(throw "-filter required"),
     [string]$indent='        ',
     [string]$secretIndent='  ',
     [string]$secretsName='secrets-default',
@@ -43,23 +43,73 @@ function InsertContent {
     $content.Trim() > $path
 }
 
-if($path){
-    $env=Get-Content -Path "$path" | ConvertFrom-Json
-    $env | Get-Member -MemberType NoteProperty | ForEach-Object {
-        [string]$name=$_.Name
-        $value=$env."$name"
+$filterList=$filter.Split(",")
 
-        if($name -eq 'AUTO_PREFIX'){
-            return
+function GetName {
+    param(
+        [string]$name=$(throw "-name required"),
+        [hashtable]$env=$(throw "-env required")
+    )
+
+    if($name -eq 'AUTO_PREFIX'){
+        return $null
+    }
+
+    if(!$name.Contains('__')){
+        return $name
+    }
+
+    for($i=0; $i -lt $filterList.Length; $i++){
+        $filter=$filterList[$i]
+
+        if(!$name.StartsWith($filter)){
+            continue
         }
 
-        if($name.Contains('__')){
-            if($name.StartsWith($filter)){
-                $name=$name.Substring($filter.Length)
-            }else{
-                return
+        $name=$name.Substring($filter.Length)
+
+        for($n=0; $n -lt $i; $n++){
+            $pf=$filterList[$n]
+            if($env.ContainsKey($pf+$name)){
+                return $null
             }
+            
         }
+
+        return $name
+
+    }
+
+    return $null
+
+    if($name.StartsWith($filter)){
+        $name=$name.Substring($filter.Length)
+    }elseif($fallbackFilter -and $name.StartsWith($fallbackFilter)){
+        $name=$name.Substring($fallbackFilter.Length)
+    }else{
+        return
+    }
+}
+
+if($path){
+
+    [hashtable]$values=@{}
+    [hashtable]$env=Get-Content -Path "$path" | ConvertFrom-Json -AsHashtable
+
+    foreach($key in $env.Keys){
+
+        $name=GetName -name $key -env $env
+        if(!$name){
+            continue
+        }
+
+        $values[$name]=$env[$key]
+    }
+
+    foreach($name in $values.Keys | Sort-Object){
+        
+        $value=$values[$name]
+
         $name=$prefix+$name.ToUpper()
         $value=$value.Replace("\","\\").Replace("`n","\n").Replace("`t","\t")
 
@@ -70,22 +120,21 @@ if($path){
 
 if($secretPath){
 
-    $env=Get-Content -Path "$secretPath" | ConvertFrom-Json
-    $env | Get-Member -MemberType NoteProperty | ForEach-Object {
-        [string]$name=$_.Name
-        $value=$env."$name"
+    [hashtable]$values=@{}
+    [hashtable]$env=Get-Content -Path "$secretPath" | ConvertFrom-Json -AsHashtable
 
-        if($name -eq 'AUTO_PREFIX'){
-            return
-        }
+    foreach($key in $env.Keys){
 
-        if($name.Contains('__')){
-            if($name.StartsWith($filter)){
-                $name=$name.Substring($filter.Length)
-            }else{
-                return
-            }
+        $name=GetName -name $key -env $env
+        if(!$name){
+            continue
         }
+        $values[$name]=$env[$key]
+    }
+
+    foreach($name in $values.Keys | Sort-Object){
+
+        $value=$values[$name]
         $varName=$prefix+$name.ToUpper()
 
         $out+="$indent- name: $varName$nl"
