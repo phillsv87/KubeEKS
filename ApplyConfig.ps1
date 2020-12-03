@@ -9,7 +9,8 @@ param(
     [string]$indent='        ',
     [string]$secretIndent='  ',
     [string]$secretsName='secrets-default',
-    [switch]$noOut
+    [switch]$noOut,
+    [string]$envOut
 )
 
 $ErrorActionPreference="Stop"
@@ -44,6 +45,8 @@ function InsertContent {
 }
 
 $filterList=$filter.Split(",")
+
+$envVars=[System.Text.StringBuilder]::new()
 
 function GetName {
     param(
@@ -98,11 +101,12 @@ if($path){
 
     foreach($key in $env.Keys){
 
+        $envVars.AppendLine("$key=$($env[$key])") | Out-Null
+
         $name=GetName -name $key -env $env
         if(!$name){
             continue
         }
-
         $values[$name]=$env[$key]
     }
 
@@ -124,6 +128,8 @@ if($secretPath){
     [hashtable]$env=Get-Content -Path "$secretPath" | ConvertFrom-Json -AsHashtable
 
     foreach($key in $env.Keys){
+
+        $envVars.AppendLine("$key=$($env[$key])") | Out-Null
 
         $name=GetName -name $key -env $env
         if(!$name){
@@ -165,4 +171,8 @@ if($insertSecretPath){
     "==== $secretPath ===="
     $sOut
     "==== End ===="
+}
+
+if($envOut){
+    Set-Content -path $envOut -value $envVars.ToString().Trim()
 }
