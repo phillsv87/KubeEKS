@@ -1,13 +1,15 @@
 #!/usr/local/bin/pwsh
-&"$PSScriptRoot/Config.ps1" -noReturn
+$config=&"$PSScriptRoot/Config.ps1"
 
-$cmd=aws ecr get-login --no-include-email
+aws ecr get-login-password `
+    --region $config.ClusterRegion `
+| docker login `
+    --username AWS `
+    --password-stdin $config.ContainerRegistry
+
 if(!$?){
     throw "aws ecr get-login failed"
 }
 
-Invoke-Expression $cmd
-if(!$?){
-    throw "ecr login expression failed"
-}
+
 Write-Host "Signed into ECR" -Foreground DarkGreen
